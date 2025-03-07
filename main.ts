@@ -308,6 +308,17 @@ export async function main({
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000); // Additional wait to ensure content is loaded
     
+    // Click the agent menu
+    console.log("Switching the agent...");
+    await page.act({
+      action: " Find a dropdown on the top center of the page (with settings icon to the right) and click on the dropdown.",
+    });
+
+    // Click the agent menu
+    console.log("Clicking on Athena agent... ");
+    await page.act({
+      action: "Find the Athena agent (the one that just says Athena) and click on it",
+    });
     // Click the first suggested workflow below Documentation
     console.log("Clicking the first suggested workflow below Documentation...");
     await page.act({
