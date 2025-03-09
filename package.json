@@ -4,6 +4,7 @@
   "scripts": {
     "build": "tsc",
     "start": "tsx index.ts",
+    "start:any-prompt": "tsx index-any-prompt.ts",
     "postinstall": "playwright install"
   },
   "dependencies": {
