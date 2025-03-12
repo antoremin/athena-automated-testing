@@ -52,7 +52,7 @@ async function evaluateScreenshotsWithClaude(
           "Analyze this new screenshot as well as the previous screenshots and annotations. " +
           "Check if the workflow is progressing well. " +
           "If you see any issues (errors, mistakes, messages like 'I'm sorry but I can't process your request'), flag them clearly. " +
-          "Compare with previous screenshots to identify changes or progress.";
+          "Compare with previous screenshots to identify changes or progress." + "Output structure: 1. Issues: No issues/List issues 2. Documents created: .. 3. Workflow progression: 2 words on one step + 2 words on 2nd + ... 4. Agents & Tools used: agent 1: tool 1, tool 2; agent 2: ...  5. Final state: 1 sentence one the final state. ";
       }
       
       // Add human message with text and image
@@ -251,6 +251,22 @@ export async function main({
   stagehand: Stagehand; // Stagehand instance
 }) {
   try {
+    // Parse command line arguments
+    const args: Record<string, string> = {};
+    process.argv.slice(2).forEach(arg => {
+      if (arg.startsWith('--')) {
+        const [key, value] = arg.substring(2).split('=');
+        args[key] = value;
+      }
+    });
+    
+    // Default to 10 screenshots if not specified
+    const numScreenshots = parseInt(args.num_screenshots || '10', 10);
+    // Default to 60 seconds (1 minute) between screenshots if not specified
+    const screenshotIntervalMs = parseInt(args.interval_ms || '60000', 10);
+    
+    console.log(`Configuration: Taking ${numScreenshots} screenshots with ${screenshotIntervalMs}ms interval`);
+    
     // Set a higher viewport resolution
     await page.setViewportSize({
       width: 2560,
@@ -335,12 +351,12 @@ export async function main({
     await page.waitForLoadState('networkidle');
     await page.waitForTimeout(3000); // Additional wait to ensure content is loaded
     
-    // Take screenshots every minute for 10 minutes (10 screenshots total)
-    console.log("Starting to take screenshots every minute for 10 minutes...");
+    // Take screenshots at the specified interval
+    console.log(`Starting to take ${numScreenshots} screenshots with ${screenshotIntervalMs}ms interval...`);
     
     const screenshotPaths: string[] = [];
     
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < numScreenshots; i++) {
       // Take a screenshot
       const timestamp = new Date().toISOString().replace(/:/g, '-');
       const screenshotPath = path.join(screenshotsDir, `screenshot-${i+1}-${timestamp}.png`);
@@ -350,13 +366,13 @@ export async function main({
         fullPage: true
       });
       
-      console.log(`Screenshot ${i+1}/10 taken: ${screenshotPath}`);
+      console.log(`Screenshot ${i+1}/${numScreenshots} taken: ${screenshotPath}`);
       screenshotPaths.push(screenshotPath);
       
       // Wait for 1 minute before taking the next screenshot (unless it's the last one)
-      if (i < 9) {
-        console.log(`Waiting 1 minute before taking next screenshot...`);
-        await page.waitForTimeout(60000); // 60000 ms = 1 minute
+      if (i < numScreenshots - 1) {
+        console.log(`Waiting ${screenshotIntervalMs}ms before taking next screenshot...`);
+        await page.waitForTimeout(screenshotIntervalMs);
       }
     }
     

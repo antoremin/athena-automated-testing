@@ -52,7 +52,8 @@ async function evaluateScreenshotsWithClaude(
           "Analyze this new screenshot as well as the previous screenshots and annotations. " +
           "Check if the workflow is progressing well. " +
           "If you see any issues (errors, mistakes, messages like 'I'm sorry but I can't process your request'), flag them clearly. " +
-          "Compare with previous screenshots to identify changes or progress.";
+          "Compare with previous screenshots to identify changes or progress." + 
+          "Output structure: 1. Issues: No issues/List issues 2. Documents created: .. 3. Workflow progression: 2 words on one step + 2 words on 2nd + ... 4. Agents & Tools used: agent 1: tool 1, tool 2; agent 2: ...  5. Final state: 1 sentence one the final state. ";
       }
       
       // Add human message with text and image
@@ -94,9 +95,9 @@ async function evaluateScreenshotsWithClaude(
     // After all screenshots are processed, ask for a summary
     messages.push(
       new HumanMessage(
-        "Based on all the screenshots you've analyzed, please provide a summary of the workflow execution. " +
+        "Based on all the screenshots you've analyzed, please provide a summary of the workflow execution. Be concise and provide the most important points first: errors, if no errors/issues, what was done, what agents worked/what documents created.  " +
         "Did the workflow run successfully? Were there any issues or errors? " +
-        "Please format your response as a clear summary with bullet points for any issues found, " +
+        "Please format your response as a clear summary with bullet points for any issues found, no more than 5 sentences/bullet points " +
         "and reference the specific screenshots where issues were observed."
       )
     );
@@ -251,6 +252,25 @@ export async function main({
   stagehand: Stagehand; // Stagehand instance
 }) {
   try {
+    // Parse command line arguments
+    const args: Record<string, string> = {};
+    process.argv.slice(2).forEach(arg => {
+      if (arg.startsWith('--')) {
+        const [key, value] = arg.substring(2).split('=');
+        args[key] = value;
+      }
+    });
+    
+    // Default to 10 screenshots if not specified
+    const numScreenshots = parseInt(args.num_screenshots || '10', 10);
+    // Default to 60 seconds (1 minute) between screenshots if not specified
+    const screenshotIntervalMs = parseInt(args.interval_ms || '60000', 10);
+    // Default prompt if not specified
+    const customPrompt = args.prompt || "research news on dogs";
+    
+    console.log(`Configuration: Taking ${numScreenshots} screenshots with ${screenshotIntervalMs}ms interval`);
+    console.log(`Using prompt: "${customPrompt}"`);
+    
     // Set a higher viewport resolution
     await page.setViewportSize({
       width: 2560,
@@ -275,8 +295,24 @@ export async function main({
       modelName: "claude-3-7-sonnet-20250219",
     });
 
-    // Navigate to Athena
-    await page.goto("https://app.athenaintel.com/");
+    // Navigate to Athena with retry logic
+    console.log("Navigating to Athena...");
+    let retries = 3;
+    while (retries > 0) {
+      try {
+        await page.goto("https://app.athenaintel.com/", { timeout: 60000 });
+        console.log("Successfully navigated to Athena");
+        break; // Break out of the loop if successful
+      } catch (error) {
+        retries--;
+        if (retries === 0) {
+          console.error("Failed to navigate to Athena after multiple attempts");
+          throw error;
+        }
+        console.log(`Navigation failed, retrying... (${retries} attempts left)`);
+        await page.waitForTimeout(5000); // Wait 5 seconds before retrying
+      }
+    }
 
     // Wait for the email input field to be visible
     await page.waitForSelector('input[autocomplete="email"]', { state: 'visible' });
@@ -317,7 +353,7 @@ export async function main({
     // Click the agent menu
     console.log("Switching the agent...");
     await page.act({
-      action: " Find a dropdown on the top center of the page (with settings icon to the right) and click on the dropdown.",
+      action: "Find a dropdown on the top center of the page (with settings icon to the right) and click on the dropdown.",
     });
 
     // Click the agent menu
@@ -326,41 +362,59 @@ export async function main({
       action: "Find the Athena agent (the one that just says Athena) and click on it",
     });
     
-    // Type in a custom prompt instead of clicking on a suggested workflow
+    // Type in a custom prompt in the chat input
     console.log("Typing in a custom prompt...");
     await page.act({
-      action: "Find the input field or text area where you can type a prompt, click on it, and type: Install yfinance library, analyze apple financial performance, upload the table to athena, and write a report",
+      action: `Find the chat input field at the bottom of the page, click on it, and type: ${customPrompt}`,
     });
     
-    // Press Enter to submit the prompt
-    console.log("Submitting the prompt...");
-    await page.keyboard.press('Enter');
+    // Click the send button
+    console.log("Clicking the send button...");
+    await page.act({
+      action: "Click the send button or press Enter to submit the prompt",
+    });
     
     // Wait for navigation and content to load
     await page.waitForLoadState('networkidle');
     
-    // Take screenshots every minute for 10 minutes (10 screenshots total)
-    console.log("Starting to take screenshots every minute for 10 minutes...");
+    // Take screenshots at the specified interval
+    console.log(`Starting to take ${numScreenshots} screenshots with ${screenshotIntervalMs}ms interval...`);
     
     const screenshotPaths: string[] = [];
     
-    for (let i = 0; i < 10; i++) {
-      // Take a screenshot
+    for (let i = 0; i < numScreenshots; i++) {
+      // Take a screenshot with retry logic
       const timestamp = new Date().toISOString().replace(/:/g, '-');
       const screenshotPath = path.join(screenshotsDir, `screenshot-${i+1}-${timestamp}.png`);
       
-      await page.screenshot({
-        path: screenshotPath,
-        fullPage: true
-      });
+      console.log(`Taking screenshot ${i+1}/${numScreenshots}...`);
+      let screenshotRetries = 3;
+      while (screenshotRetries > 0) {
+        try {
+          await page.screenshot({
+            path: screenshotPath,
+            fullPage: true,
+            timeout: 60000 // Increase timeout to 60 seconds
+          });
+          console.log(`Screenshot ${i+1}/${numScreenshots} taken: ${screenshotPath}`);
+          break; // Break out of the loop if successful
+        } catch (error) {
+          screenshotRetries--;
+          if (screenshotRetries === 0) {
+            console.error(`Failed to take screenshot after multiple attempts`);
+            throw error;
+          }
+          console.log(`Screenshot failed, retrying... (${screenshotRetries} attempts left)`);
+          await page.waitForTimeout(5000); // Wait 5 seconds before retrying
+        }
+      }
       
-      console.log(`Screenshot ${i+1}/10 taken: ${screenshotPath}`);
       screenshotPaths.push(screenshotPath);
       
       // Wait for 1 minute before taking the next screenshot (unless it's the last one)
-      if (i < 9) {
-        console.log(`Waiting 1 minute before taking next screenshot...`);
-        await page.waitForTimeout(60000); // 60000 ms = 1 minute
+      if (i < numScreenshots - 1) {
+        console.log(`Waiting ${screenshotIntervalMs}ms before taking next screenshot...`);
+        await page.waitForTimeout(screenshotIntervalMs);
       }
     }
     
