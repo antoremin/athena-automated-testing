@@ -251,6 +251,12 @@ export async function main({
   stagehand: Stagehand; // Stagehand instance
 }) {
   try {
+    // Set a higher viewport resolution
+    await page.setViewportSize({
+      width: 2560,
+      height: 1440
+    });
+    
     // Create screenshots directory if it doesn't exist
     const screenshotsDir = path.join(process.cwd(), 'screenshots');
     if (!fs.existsSync(screenshotsDir)) {
@@ -323,19 +329,22 @@ export async function main({
     // Type in a custom prompt instead of clicking on a suggested workflow
     console.log("Typing in a custom prompt...");
     await page.act({
-      action: "Type in the prompt: Install yfinance library, analyze apple financial performance, upload the table to athena, and write a report",
+      action: "Find the input field or text area where you can type a prompt, click on it, and type: Install yfinance library, analyze apple financial performance, upload the table to athena, and write a report",
     });
+    
+    // Press Enter to submit the prompt
+    console.log("Submitting the prompt...");
+    await page.keyboard.press('Enter');
     
     // Wait for navigation and content to load
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(3000); // Additional wait to ensure content is loaded
     
-    // Take screenshots every minute for 5 minutes (5 screenshots total)
-    console.log("Starting to take screenshots every minute for 5 minutes...");
+    // Take screenshots every minute for 10 minutes (10 screenshots total)
+    console.log("Starting to take screenshots every minute for 10 minutes...");
     
     const screenshotPaths: string[] = [];
     
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 10; i++) {
       // Take a screenshot
       const timestamp = new Date().toISOString().replace(/:/g, '-');
       const screenshotPath = path.join(screenshotsDir, `screenshot-${i+1}-${timestamp}.png`);
@@ -345,11 +354,11 @@ export async function main({
         fullPage: true
       });
       
-      console.log(`Screenshot ${i+1}/5 taken: ${screenshotPath}`);
+      console.log(`Screenshot ${i+1}/10 taken: ${screenshotPath}`);
       screenshotPaths.push(screenshotPath);
       
       // Wait for 1 minute before taking the next screenshot (unless it's the last one)
-      if (i < 4) {
+      if (i < 9) {
         console.log(`Waiting 1 minute before taking next screenshot...`);
         await page.waitForTimeout(60000); // 60000 ms = 1 minute
       }
