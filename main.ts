@@ -94,9 +94,9 @@ async function evaluateScreenshotsWithClaude(
     // After all screenshots are processed, ask for a summary
     messages.push(
       new HumanMessage(
-        "Based on all the screenshots you've analyzed, please provide a summary of the workflow execution. " +
+        "Based on all the screenshots you've analyzed, please provide a summary of the workflow execution. Be concise and provide the most important points first: errors, if no errors/issues, what was done, what agents worked/what documents created.  " +
         "Did the workflow run successfully? Were there any issues or errors? " +
-        "Please format your response as a clear summary with bullet points for any issues found, " +
+        "Please format your response as a clear summary with bullet points for any issues found, no more than 5 sentences/bullet points " +
         "and reference the specific screenshots where issues were observed."
       )
     );
