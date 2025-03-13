@@ -35,10 +35,10 @@ export async function main({
     console.log(`Using prompt: "${customPrompt}"`);
     
     // Set a higher viewport resolution
-    await page.setViewportSize({
-      width: 2560,
-      height: 1440
-    });
+    // await page.setViewportSize({
+    //   width: 2560,
+    //   height: 1440
+    // });
     
     // Create screenshots directory if it doesn't exist
     const screenshotsDir = path.join(process.cwd(), 'screenshots');
