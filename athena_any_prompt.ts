@@ -122,7 +122,7 @@ export async function main({
     // Type in a custom prompt in the chat input
     console.log("Typing in a custom prompt...");
     await page.act({
-      action: `Find the chat input field at the bottom of the page, click on it, and type: ${customPrompt}`,
+      action: `Find the chat input field at the bottom of the page, click on it (make sure to click in the upper center not to hit any buttons), and type: ${customPrompt}`,
     });
     
     // Click the send button
