@@ -122,14 +122,14 @@ export async function main({
     // Type in a custom prompt in the chat input
     console.log("Typing in a custom prompt...");
     await page.act({
-      action: `Find the chat input field at the bottom of the page, click on it (make sure to click in the upper center not to hit any buttons), and type: ${customPrompt}`,
+      action: `Find the chat input field at the bottom of the page, click on it (make sure to click in the upper center not to hit any buttons), and type: ${customPrompt}. hit enter`,
     });
     
-    // Click the send button
-    console.log("Clicking the send button...");
-    await page.act({
-      action: "Click the send button or press Enter to submit the prompt",
-    });
+    // // Click the send button
+    // console.log("Clicking the send button...");
+    // await page.act({
+    //   action: "Click the send button or press Enter to submit the prompt",
+    // });
     
     // Wait for navigation and content to load
     await page.waitForLoadState('networkidle');
