@@ -122,7 +122,7 @@ export async function main({
     // Type in a custom prompt in the chat input
     console.log("Clicking in the chat input field...");
     await page.act({
-      action: `Find the chat input field at the bottom of the page (that says "Type @ to tag... "), click on it `,
+      action: `Find the chat input field at the bottom of the page (that says class="tiptap ProseMirror prose-sm max-h-[70vh] m-0 w-full text-custom px-2.5 pt-2 pb-0.5 focus:outline-none text-[16px]"), click on it `,
     });
     
     // Type and click the send button
